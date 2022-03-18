@@ -20,12 +20,14 @@ static struct omap_i2c_dev i2c_dev;
 
 int i2c_transmit(struct i2c_msg *msg, size_t count)
 {
+	printk("in Transmit\n");
 	ENTER();
 	return 0;
 }
 
 int i2c_receive(struct i2c_msg *msg, size_t count)
 {	
+	printk("in Receive\n");
 	ENTER();
 	return 0;
 }
@@ -34,6 +36,7 @@ static int __init i2c_init_driver(void)
 {
 	/* Char interface related initialization */
 	// TODO 1.1 : Initialize the character driver interface
+	chrdrv_init(&i2c_dev);
 
 	return 0;
 }
@@ -41,6 +44,7 @@ static int __init i2c_init_driver(void)
 static void __exit i2c_exit_driver(void)
 {
 	// TODO 1.2: De-initialize the character driver interface
+	chrdrv_exit(&i2c_dev);
 }
 
 module_init(i2c_init_driver);
