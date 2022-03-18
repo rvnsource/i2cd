@@ -96,6 +96,8 @@ int i2c_transmit(struct i2c_msg *msg, size_t count)
 	int i2c_error = 0;
 	/* Initialize the loop variable */
 	int k = 7;
+	int i = 0;
+	u8 a;
 
 	//TODO: 3.2 Declare an array of 3
     // Index 0 - Eeprom address upper 8 bits
@@ -105,10 +107,14 @@ int i2c_transmit(struct i2c_msg *msg, size_t count)
 	ENTER();
 
 	//TODO 2.6 Set the TX FIFO Threshold to 0 and clear the FIFO's
+	omap_i2c_write_reg(&i2c_dev,OMAP_I2C_BUF_REG,0);
+	
 
 	//TODO 2.7: Update the slave addresss register with 0x50
+	omap_i2c_write_reg(&i2c_dev, OMAP_I2C_SA_REG, 0x50);
 
 	//TODO 2.8: Update the count register with 1
+	omap_i2c_write_reg(&i2c_dev,OMAP_I2C_CNT_REG, cnt);
 
 	printk("##### Sending %d byte(s) on the I2C bus ####\n", cnt);
 
@@ -119,6 +125,7 @@ int i2c_transmit(struct i2c_msg *msg, size_t count)
 	 * The naming convention for the bits is OMAP_I2C_<REG NAME>_<BIT NAME>
 	 * So, for start bit, the macro is OMAP_I2C_CON_STT. Check I2c_char.h for other bits
 	 */
+	w = OMAP_I2C_CON_STT | OMAP_I2C_CON_MST | OMAP_I2C_CON_STP | OMAP_I2C_CON_TRX | OMAP_I2C_CON_EN;
 	omap_i2c_write_reg(&i2c_dev, OMAP_I2C_CON_REG, w); /* Control Register */
 
 	while (k--) {
@@ -129,18 +136,23 @@ int i2c_transmit(struct i2c_msg *msg, size_t count)
 			goto wr_exit;
 		}
 		//TODO 2.10: Check the status to verify if XRDY is received
-		if (status) {
+		if (status & OMAP_I2C_STAT_XRDY) {
 			printk("Got XRDY\n");
 			//TODO 2.11: Update the data register with data to be transmitted
+			omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a);
+			
 			//TODO 3.3: Write an array into the data register
+			//omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a[i++]);
 
 			//TODO 2.12: Clear the XRDY event with omap_i2c_ack_stat
+			omap_i2c_ack_stat(&i2c_dev, OMAP_I2C_STAT_XRDY);
 			continue;
 		}
 		//TODO 2.13: Check the status to verify if ARDY is received
-		if (status) {
+		if (status & OMAP_I2C_STAT_ARDY) {
 			printk("Got ARDY\n");
 			//TODO 2.14: Clear the XRDY event with omap_i2c_ack_stat and break out of loop
+			omap_i2c_ack_stat(&i2c_dev, OMAP_I2C_STAT_XRDY);
 			break;
 		}
 	}
@@ -225,6 +237,7 @@ static void omap_i2c_set_speed(struct omap_i2c_dev *dev)
         psc = fclk_rate / internal_clk;
 
         //TODO 2.4: Update the prescalar register with psc - 1
+	omap_i2c_write_reg(dev, OMAP_I2C_PSC_REG,1);
 
         // Hard coding the speed to 400KHz
         dev->speed = 400;
@@ -235,6 +248,8 @@ static void omap_i2c_set_speed(struct omap_i2c_dev *dev)
         sclh = scl - 5;
 
         //TODO 2.5: Update the SCL low and high registers as per above calculations
+	omap_i2c_write_reg(dev, OMAP_I2C_SCLL_REG, scll);
+	omap_i2c_write_reg(dev, OMAP_I2C_SCLH_REG, sclh);
 }
 
 int omap_i2c_init(struct omap_i2c_dev *dev)
@@ -246,9 +261,12 @@ int omap_i2c_init(struct omap_i2c_dev *dev)
         omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, OMAP_I2C_CON_EN);
 
         // TODO 2.2: Update the 'iestate' field with desired events such as XRDY and ARDY
+	i2c_dev.iestate = OMAP_I2C_IE_XRDY | OMAP_I2C_IE_ARDY;
+
 		// TODO 4.10: Update the 'iestate' to enable RRDY event
 
         // TODO 2.3: Update the OMAP_I2C_IE_REG
+ 	omap_i2c_write_reg(dev, OMAP_I2C_IE_REG, i2c_dev.iestate);
 
         flush_fifo(dev);
         omap_i2c_write_reg(dev, OMAP_I2C_STAT_REG, 0XFFFF);
@@ -264,6 +282,9 @@ static int __init i2c_init_driver(void)
          * in 'base' field of omap_i2c_dev.
          * Use API void __iomem* ioremap((resource_size_t offset, unsigned long size)
         */
+
+	i2c_dev.base = ioremap(0x44e0b000, 0x1000);
+	
         if (IS_ERR(i2c_dev.base)) {
                 printk(KERN_ERR "Unable to ioremap\n");
                 return PTR_ERR(i2c_dev.base);
@@ -273,6 +294,8 @@ static int __init i2c_init_driver(void)
         omap_i2c_init(&i2c_dev);
 
 	// TODO 1.1 : Initialize the character driver interface
+        chrdrv_init(&i2c_dev);
+
 
 	return 0;
 }
@@ -280,6 +303,8 @@ static int __init i2c_init_driver(void)
 static void __exit i2c_exit_driver(void)
 {
 	// TODO 1.2: De-initialize the character driver interface
+        chrdrv_exit(&i2c_dev);
+
 }
 
 module_init(i2c_init_driver);
