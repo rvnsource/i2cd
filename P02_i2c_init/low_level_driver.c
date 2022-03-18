@@ -92,17 +92,17 @@ u16 wait_for_event(struct omap_i2c_dev *dev)
 int i2c_transmit(struct i2c_msg *msg, size_t count)
 {
 	//TODO: 3.1 Update the cnt to 3
-	u16 status, cnt = 1, w = 0;
+	u16 status, cnt = 3, w = 0;
 	int i2c_error = 0;
 	/* Initialize the loop variable */
 	int k = 7;
 	int i = 0;
-	u8 a;
 
 	//TODO: 3.2 Declare an array of 3
     // Index 0 - Eeprom address upper 8 bits
     // Index 1 - Eeprom address lower 8 bits
     // Index 2 - data
+	u8 a[] = {0x00,0x30,0x99};
 
 	ENTER();
 
@@ -139,10 +139,10 @@ int i2c_transmit(struct i2c_msg *msg, size_t count)
 		if (status & OMAP_I2C_STAT_XRDY) {
 			printk("Got XRDY\n");
 			//TODO 2.11: Update the data register with data to be transmitted
-			omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a);
+			//omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a);
 			
 			//TODO 3.3: Write an array into the data register
-			//omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a[i++]);
+			omap_i2c_write_reg(&i2c_dev, OMAP_I2C_DATA_REG, a[i++]);
 
 			//TODO 2.12: Clear the XRDY event with omap_i2c_ack_stat
 			omap_i2c_ack_stat(&i2c_dev, OMAP_I2C_STAT_XRDY);
