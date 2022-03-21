@@ -1,7 +1,7 @@
 # If called directly from the command line, invoke the kernel build system.
 ifeq ($(KERNELRELEASE),)
 
-	KERNEL_SOURCE := <Kernel source path>
+	KERNEL_SOURCE := /home/rvn/I2CD/bbb-builds/OS/linux-4.19.103 
 	PWD := $(shell pwd)
 default:
 	$(MAKE) -C $(KERNEL_SOURCE) SUBDIRS=$(PWD) modules

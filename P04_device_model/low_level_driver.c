@@ -308,6 +308,8 @@ static int i2c_drv_probe(struct platform_device *pdev)
 	struct resource *res;
 
 	//TODO 5.4: Get the physical address from the platform device
+	printk("Platform i2c Driver Probe called\n");
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) 
 	{
 		pr_err(" Specified Resource Not Available... 1\n");
@@ -324,6 +326,8 @@ static int i2c_drv_probe(struct platform_device *pdev)
          * Use API void __iomem* ioremap((resource_size_t offset, unsigned long size)
         */
 
+	i2c_dev.base = ioremap(res->start, resource_size(res));
+
         if (IS_ERR(i2c_dev.base)) {
                 printk(KERN_ERR "Unable to ioremap\n");
                 return PTR_ERR(i2c_dev.base);
@@ -335,6 +339,9 @@ static int i2c_drv_probe(struct platform_device *pdev)
 	 * TODO 5.5: Get the clock_frequency from the platform_data of
 	 * plaform device and assign it to speed field omap_i2c_dev
 	 */
+
+	i2c_dev.speed = *(u16 *)(pdev->dev.platform_data);
+
 	/*
 	 * TODO 6.3: Get the clock_frequency from the dtb node
 	 * into clk_freq. Overwriting changes from TODO 5.5
@@ -363,18 +370,30 @@ static const struct of_device_id i2c_drv_dt[] = {
 //TODO 5.1: Populate the platform driver structure
 static struct platform_driver i2c_pldriver = 
 {
+	.probe          = i2c_drv_probe,
+	.remove         = i2c_drv_remove,
+	.driver = 
+	{
+		.name  = DRIVER_NAME,
+	},
 		// TODO 6.2 Intialize of_match_table
 };
 
 static int __init i2c_init_driver(void)
 {
 	//TODO 5.2: Register the platform driver
+	printk("Welcome to sample Platform i2c driver.... \n");
+	platform_driver_register(&i2c_pldriver);
 	return 0;
 }
 
 static void __exit i2c_exit_driver(void)
 {
 	//TODO 5.3: Un-register the platform driver
+	printk("Exiting sample Platform i2c driver... \n");
+
+	/* Unregistering from Kernel */
+	platform_driver_unregister(&i2c_pldriver);
 }
 
 module_init(i2c_init_driver);
